@@ -23,7 +23,7 @@ hiddenimports += collect_submodules("dotenv")
 
 
 a = Analysis(
-    ["app/main.py"],
+    [str(ROOT / "app" / "main.py")],
     pathex=[str(ROOT)],
     binaries=[],
     datas=datas,
