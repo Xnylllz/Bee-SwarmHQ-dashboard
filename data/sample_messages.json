@@ -1,0 +1,22 @@
+[
+  {
+    "channel_id": "123456789012345678",
+    "author_name": "Natro Bot",
+    "content": "Honey: 12.4B | Pollen: 523.8M | HPS: 4.5M | Backpack: 78% | Gathering",
+    "attachments": []
+  },
+  {
+    "channel_id": "123456789012345678",
+    "author_name": "Natro Bot",
+    "content": "Current Honey: 12.8B\nCurrent Pollen: 610M\nHoney/sec: 5.1M\nSession: 22.7B\nHourly: 18.2B\nBackpack: 54%\nConverting",
+    "attachments": []
+  },
+  {
+    "channel_id": "123456789012345678",
+    "author_name": "Natro Bot",
+    "content": "Macro screenshot update - backpack nearly full, converting soon.",
+    "attachments": [
+      "cache/images/example_screenshot.png"
+    ]
+  }
+]

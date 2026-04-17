@@ -1,0 +1,12 @@
+.DS_Store
+.env
+.venv/
+__pycache__/
+*.pyc
+build/
+dist/
+cache/
+data/dashboard.db
+data/exports/
+data/launchagent_stdout.log
+data/launchagent_stderr.log

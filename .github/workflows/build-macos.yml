@@ -1,0 +1,47 @@
+name: Build macOS App
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+jobs:
+  build-macos:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r requirements-build.txt
+
+      - name: Build app bundle
+        run: |
+          chmod +x scripts/build_macos_app.sh
+          ./scripts/build_macos_app.sh
+
+      - name: Build dmg
+        run: |
+          chmod +x scripts/build_macos_dmg.sh
+          ./scripts/build_macos_dmg.sh
+
+      - name: Upload app bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: BeeHQ-app
+          path: dist/BeeHQ.app
+
+      - name: Upload dmg
+        uses: actions/upload-artifact@v4
+        with:
+          name: BeeHQ-dmg
+          path: dist/BeeHQ-macOS.dmg

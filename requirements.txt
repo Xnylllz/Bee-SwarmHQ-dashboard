@@ -1,0 +1,5 @@
+customtkinter>=5.2.2
+discord.py>=2.5.2
+Pillow>=11.2.1
+python-dotenv>=1.0.1
+rumps>=0.4.0
