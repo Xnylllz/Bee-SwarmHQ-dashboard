@@ -1,4 +1,4 @@
-# Bee Swarm / Natro Dashboard for macOS and Windows
+# Bee Swarm / Natro Dashboard for macOS and Windows (USE TESSERACT)
 
 A modular desktop dashboard app for macOS and Windows built with Python, `customtkinter`, `discord.py`, SQLite, Pillow, and `python-dotenv`.
 
