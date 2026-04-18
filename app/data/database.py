@@ -30,10 +30,11 @@ DEFAULT_SETTINGS: dict[str, str] = {
     "refresh_interval": "1200",
     "startup_backfill_hours": "12",
     "offline_timeout_minutes": "10",
-    "run_in_background_on_close": "1",
+    "run_in_background_on_close": "0",
     "enable_menubar_helper": "1",
     "desktop_notifications": "1",
     "launch_at_login": "0",
+    "close_behavior_migrated_v2": "1",
 }
 
 
@@ -194,6 +195,22 @@ class Database:
                 conn.execute(
                     "INSERT OR IGNORE INTO settings(key, value) VALUES(?, ?)",
                     (key, value),
+                )
+            migrated = conn.execute(
+                "SELECT value FROM settings WHERE key='close_behavior_migrated_v2'"
+            ).fetchone()
+            if not migrated:
+                conn.execute(
+                    """
+                    INSERT INTO settings(key, value) VALUES('run_in_background_on_close', '0')
+                    ON CONFLICT(key) DO UPDATE SET value='0'
+                    """
+                )
+                conn.execute(
+                    """
+                    INSERT INTO settings(key, value) VALUES('close_behavior_migrated_v2', '1')
+                    ON CONFLICT(key) DO UPDATE SET value='1'
+                    """
                 )
             if not conn.execute("SELECT 1 FROM tabs LIMIT 1").fetchone():
                 conn.execute(

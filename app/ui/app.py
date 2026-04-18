@@ -701,7 +701,7 @@ class BeeDashboardApp(ctk.CTk):
         return max(500, min(value, 10_000))
 
     def handle_close(self) -> None:
-        if self.settings_store.get("run_in_background_on_close", "1") == "1":
+        if self.settings_store.get("run_in_background_on_close", "0") == "1":
             self.hide_to_background()
             return
         self.quit_application()

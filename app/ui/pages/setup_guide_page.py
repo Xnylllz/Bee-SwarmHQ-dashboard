@@ -110,7 +110,7 @@ class SetupGuidePage(ctk.CTkScrollableFrame):
             f"Tabs linked to update channels: {len(configured_tabs)} / {len(tabs)}",
             f"Tabs ready for macro commands: {len(command_tabs)} / {len(tabs)}",
             f"Tabs with Roblox profile picture: {len(profile_tabs)} / {len(tabs)}",
-            f"Background mode on close: {'Enabled' if settings.get('run_in_background_on_close', '1') == '1' else 'Disabled'}",
+            f"Background mode on close: {'Enabled' if settings.get('run_in_background_on_close', '0') == '1' else 'Disabled'}",
             f"Menu bar helper: {'Enabled' if settings.get('enable_menubar_helper', '1') == '1' else 'Disabled'}",
             f"Launch at login: {'Enabled' if settings.get('launch_at_login', '0') == '1' else 'Disabled'}",
             f"Desktop notifications: {'Enabled' if settings.get('desktop_notifications', '1') == '1' else 'Disabled'}",

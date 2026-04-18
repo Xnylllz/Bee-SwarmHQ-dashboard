@@ -293,7 +293,7 @@ class SettingsPage(ctk.CTkScrollableFrame):
         self._replace_entry(self.refresh_interval, settings.get("refresh_interval", "1200"))
         self._replace_entry(self.startup_backfill_hours, settings.get("startup_backfill_hours", "12"))
         self._replace_entry(self.offline_timeout, settings.get("offline_timeout_minutes", "10"))
-        self.run_in_background_on_close.select() if settings.get("run_in_background_on_close", "1") == "1" else self.run_in_background_on_close.deselect()
+        self.run_in_background_on_close.select() if settings.get("run_in_background_on_close", "0") == "1" else self.run_in_background_on_close.deselect()
         self.enable_menubar_helper.select() if settings.get("enable_menubar_helper", "1") == "1" else self.enable_menubar_helper.deselect()
         self.desktop_notifications.select() if settings.get("desktop_notifications", "1") == "1" else self.desktop_notifications.deselect()
         self.launch_at_login.select() if settings.get("launch_at_login", "0") == "1" else self.launch_at_login.deselect()

@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import os
 from pathlib import Path
 import re
+import shutil
 
 from PIL import Image, ImageFilter, ImageOps
 
@@ -41,9 +43,17 @@ class HourlyImageOCRService:
         re.IGNORECASE,
     )
     ZEROISH_PATTERN = re.compile(r"\b0(?:[.,]0+)?\s*([kmbt])?\b", re.IGNORECASE)
+    COMMON_TESSERACT_PATHS = (
+        "/opt/homebrew/bin/tesseract",
+        "/usr/local/bin/tesseract",
+        r"C:\Program Files\Tesseract-OCR\tesseract.exe",
+        r"C:\Program Files (x86)\Tesseract-OCR\tesseract.exe",
+    )
 
     def extract(self, image_path: str) -> HourlyImageOCRResult:
         if pytesseract is None:
+            return HourlyImageOCRResult(False, False, None, None, "")
+        if not self._ensure_tesseract_available():
             return HourlyImageOCRResult(False, False, None, None, "")
         path = Path(image_path)
         if not path.exists():
@@ -62,6 +72,33 @@ class HourlyImageOCRService:
             last_hour=values["last_hour"],
             raw_text=raw_text[:2000],
         )
+
+    def _ensure_tesseract_available(self) -> bool:
+        if pytesseract is None:
+            return False
+        current_cmd = getattr(pytesseract.pytesseract, "tesseract_cmd", "") or "tesseract"
+        if self._command_exists(current_cmd):
+            return True
+
+        override = os.environ.get("BEEHQ_TESSERACT_CMD") or os.environ.get("TESSERACT_CMD")
+        candidates = [override] if override else []
+        candidates.extend(self.COMMON_TESSERACT_PATHS)
+
+        for candidate in candidates:
+            if not candidate:
+                continue
+            if self._command_exists(candidate):
+                pytesseract.pytesseract.tesseract_cmd = candidate
+                return True
+        return False
+
+    def _command_exists(self, candidate: str) -> bool:
+        if not candidate:
+            return False
+        candidate_path = Path(candidate)
+        if candidate_path.exists():
+            return True
+        return shutil.which(candidate) is not None
 
     def _extract_best_text_and_values(self, image: Image.Image) -> tuple[str, dict[str, float | None]]:
         best_score = -1
