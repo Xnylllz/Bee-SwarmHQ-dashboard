@@ -6,6 +6,7 @@ import logging
 import threading
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 from typing import Callable
 
 import discord
@@ -16,6 +17,7 @@ from app.parsing.hourly_report_parser import HourlyReportParser
 from app.parsing.natro_parser import NatroMessageParser
 from app.services.hourly_image_ocr import HourlyImageOCRService
 from app.services.image_cache import ImageCache
+from app.services.live_update_ocr import LiveUpdateOCRService
 
 
 logger = logging.getLogger(__name__)
@@ -51,6 +53,7 @@ class DashboardDiscordClient(discord.Client):
         self.announcement_parser = announcement_parser
         self.hourly_report_parser = hourly_report_parser
         self.hourly_image_ocr = HourlyImageOCRService()
+        self.live_update_ocr = LiveUpdateOCRService()
         self.image_cache = image_cache
         self.watched_channels_getter = watched_channels_getter
         self.announcement_channels_getter = announcement_channels_getter
@@ -92,6 +95,7 @@ class DashboardDiscordClient(discord.Client):
 
         embed_payload = []
         embed_text_parts = []
+        attachment_paths: list[str] = []
         for embed in message.embeds:
             embed_dict = embed.to_dict()
             embed_payload.append(embed_dict)
@@ -101,8 +105,14 @@ class DashboardDiscordClient(discord.Client):
                 embed_text_parts.append(str(embed.description))
             for field in embed_dict.get("fields", []):
                 embed_text_parts.append(f"{field.get('name', '')}: {field.get('value', '')}")
-
-        attachment_paths: list[str] = []
+            image_url = (embed_dict.get("image") or {}).get("url") or (embed_dict.get("thumbnail") or {}).get("url")
+            if image_url:
+                try:
+                    cached_path = self.image_cache.cache_remote_file(image_url, Path(image_url).name or "embed_image.png")
+                    if cached_path not in attachment_paths:
+                        attachment_paths.append(cached_path)
+                except Exception as exc:
+                    logger.exception("Failed to cache embed image: %s", exc)
         for attachment in message.attachments:
             if attachment.content_type and attachment.content_type.startswith("image"):
                 try:
@@ -133,6 +143,31 @@ class DashboardDiscordClient(discord.Client):
             embed_text="\n".join(embed_text_parts),
             attachment_paths=attachment_paths,
         )
+
+        if attachment_paths and (
+            parse_result.values["honey"] is None
+            or parse_result.values["pollen"] is None
+            or parse_result.values["honey_per_second"] is None
+            or parse_result.values["backpack_percent"] is None
+        ):
+            live_ocr = self.live_update_ocr.extract(attachment_paths[0])
+            if live_ocr.extracted:
+                if parse_result.values["honey"] is None:
+                    parse_result.values["honey"] = live_ocr.honey
+                if parse_result.values["pollen"] is None:
+                    parse_result.values["pollen"] = live_ocr.pollen
+                if parse_result.values["honey_per_second"] is None:
+                    parse_result.values["honey_per_second"] = live_ocr.honey_per_second
+                if parse_result.values["backpack_percent"] is None:
+                    parse_result.values["backpack_percent"] = live_ocr.backpack_percent
+                if parse_result.values["hourly_rate"] is None and live_ocr.honey_per_second is not None:
+                    parse_result.values["hourly_rate"] = live_ocr.honey_per_second * 3600
+                parse_result.parsed_ok = True
+                parse_result.summary = (
+                    f"{parse_result.summary}, ocr_live_update=True"
+                    if parse_result.summary and parse_result.summary != "Raw message stored"
+                    else "OCR live screenshot parsed"
+                )
         self.database.insert_message(
             tab_id=tab_id,
             channel_id=channel_id,
