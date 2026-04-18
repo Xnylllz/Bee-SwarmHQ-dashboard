@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import platform
 from tkinter import colorchooser
 
 import customtkinter as ctk
@@ -24,6 +25,7 @@ class SettingsPage(ctk.CTkScrollableFrame):
         self.theme = theme
         self.callbacks = callbacks
         self._image_ref = None
+        self.system = platform.system()
 
         self.header = ctk.CTkLabel(
             self,
@@ -145,8 +147,10 @@ class SettingsPage(ctk.CTkScrollableFrame):
         self.startup_backfill_hours = self._entry(self.advanced, "Catch Up Missed Updates On Launch (hours)", "12")
         self.offline_timeout = self._entry(self.advanced, "Offline Timeout (minutes)", "10")
         self.run_in_background_on_close = self._switch(self.advanced, "Keep Running In Background When Window Closes")
-        self.enable_menubar_helper = self._switch(self.advanced, "Enable macOS Menu Bar Helper If Available")
-        self.desktop_notifications = self._switch(self.advanced, "Enable macOS Desktop Notifications")
+        helper_label = "Enable macOS Menu Bar Helper If Available" if self.system == "Darwin" else "Enable Tray / Menu Helper If Available"
+        notifications_label = "Enable macOS Desktop Notifications" if self.system == "Darwin" else "Enable Desktop Notifications"
+        self.enable_menubar_helper = self._switch(self.advanced, helper_label)
+        self.desktop_notifications = self._switch(self.advanced, notifications_label)
         self.launch_at_login = self._switch(self.advanced, "Launch Bee HQ At Login")
         ctk.CTkLabel(
             self.advanced,

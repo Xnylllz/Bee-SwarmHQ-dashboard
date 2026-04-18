@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import platform
+
 import customtkinter as ctk
 
 from app.core.fonts import app_font
@@ -11,6 +13,7 @@ class SetupGuidePage(ctk.CTkScrollableFrame):
         super().__init__(master, fg_color="transparent", **kwargs)
         self.theme = theme
         self.callbacks = callbacks
+        helper_label = "menu bar" if platform.system() == "Darwin" else "taskbar"
 
         ctk.CTkLabel(
             self,
@@ -78,7 +81,7 @@ class SetupGuidePage(ctk.CTkScrollableFrame):
                     "",
                     "8. Background mode",
                     "   If Keep Running In Background When Window Closes is on, closing the window hides Bee HQ instead of quitting it.",
-                    "   With the optional menu bar helper on, you can reopen it from the menu bar.",
+                    f"   With the optional helper on, you can reopen it from the {helper_label}.",
                     "",
                     "9. Launch at login",
                     "   Turn on Launch At Login in Settings if you want Bee HQ to start automatically after reboot.",

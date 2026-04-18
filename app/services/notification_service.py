@@ -1,8 +1,14 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta
+import platform
 import subprocess
 from tkinter import messagebox
+
+try:
+    from plyer import notification as plyer_notification
+except Exception:  # pragma: no cover - optional at runtime
+    plyer_notification = None
 
 
 class NotificationService:
@@ -42,10 +48,23 @@ class NotificationService:
         )
 
     def send_system_notification(self, title: str, message: str) -> None:
-        safe_title = str(title).replace('"', '\\"')
-        safe_message = str(message).replace('"', '\\"')
-        script = f'display notification "{safe_message}" with title "{safe_title}"'
-        try:
-            subprocess.run(["osascript", "-e", script], check=False)
-        except Exception:
-            pass
+        system = platform.system()
+        if plyer_notification is not None:
+            try:
+                plyer_notification.notify(
+                    title=str(title),
+                    message=str(message),
+                    app_name="BeeHQ",
+                    timeout=10,
+                )
+                return
+            except Exception:
+                pass
+        if system == "Darwin":
+            safe_title = str(title).replace('"', '\\"')
+            safe_message = str(message).replace('"', '\\"')
+            script = f'display notification "{safe_message}" with title "{safe_title}"'
+            try:
+                subprocess.run(["osascript", "-e", script], check=False)
+            except Exception:
+                pass

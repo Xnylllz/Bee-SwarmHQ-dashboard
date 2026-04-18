@@ -14,6 +14,7 @@ from app.data.database import Database
 from app.parsing.announcement_parser import AnnouncementParser
 from app.parsing.hourly_report_parser import HourlyReportParser
 from app.parsing.natro_parser import NatroMessageParser
+from app.services.hourly_image_ocr import HourlyImageOCRService
 from app.services.image_cache import ImageCache
 
 
@@ -49,6 +50,7 @@ class DashboardDiscordClient(discord.Client):
         self.parser = parser
         self.announcement_parser = announcement_parser
         self.hourly_report_parser = hourly_report_parser
+        self.hourly_image_ocr = HourlyImageOCRService()
         self.image_cache = image_cache
         self.watched_channels_getter = watched_channels_getter
         self.announcement_channels_getter = announcement_channels_getter
@@ -177,6 +179,7 @@ class DashboardDiscordClient(discord.Client):
             )
 
         if tab_id is not None and hourly_report_result.is_hourly_report:
+            ocr_result = self.hourly_image_ocr.extract(attachment_paths[0]) if attachment_paths else None
             self.database.insert_hourly_report(
                 {
                     "tab_id": tab_id,
@@ -188,6 +191,10 @@ class DashboardDiscordClient(discord.Client):
                     "embed_json": json.dumps(embed_payload),
                     "attachment_paths": json.dumps(attachment_paths),
                     "created_at": created_at,
+                    "ocr_hourly_average": ocr_result.hourly_average if ocr_result else None,
+                    "ocr_last_hour": ocr_result.last_hour if ocr_result else None,
+                    "ocr_text": ocr_result.raw_text if ocr_result else "",
+                    "ocr_ok": 1 if ocr_result and ocr_result.extracted else 0,
                 }
             )
 

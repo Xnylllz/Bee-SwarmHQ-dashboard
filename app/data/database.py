@@ -172,6 +172,10 @@ class Database:
             self._ensure_column(conn, "tabs", "auto_hr_enabled", "INTEGER NOT NULL DEFAULT 0")
             self._ensure_column(conn, "tabs", "auto_hr_interval_minutes", "INTEGER NOT NULL DEFAULT 30")
             self._ensure_column(conn, "tabs", "auto_hr_last_requested_at", "TEXT DEFAULT ''")
+            self._ensure_column(conn, "hourly_reports", "ocr_hourly_average", "REAL")
+            self._ensure_column(conn, "hourly_reports", "ocr_last_hour", "REAL")
+            self._ensure_column(conn, "hourly_reports", "ocr_text", "TEXT DEFAULT ''")
+            self._ensure_column(conn, "hourly_reports", "ocr_ok", "INTEGER NOT NULL DEFAULT 0")
             conn.executescript(
                 """
                 CREATE INDEX IF NOT EXISTS idx_tabs_channel_id ON tabs(channel_id);
@@ -451,10 +455,12 @@ class Database:
                 """
                 INSERT OR REPLACE INTO hourly_reports(
                     tab_id, channel_id, source_message_id, title, report_time_label,
-                    body, embed_json, attachment_paths, created_at
+                    body, embed_json, attachment_paths, created_at,
+                    ocr_hourly_average, ocr_last_hour, ocr_text, ocr_ok
                 ) VALUES(
                     :tab_id, :channel_id, :source_message_id, :title, :report_time_label,
-                    :body, :embed_json, :attachment_paths, :created_at
+                    :body, :embed_json, :attachment_paths, :created_at,
+                    :ocr_hourly_average, :ocr_last_hour, :ocr_text, :ocr_ok
                 )
                 """,
                 values,
@@ -763,6 +769,15 @@ class Database:
             recent = self.get_recent_stats(tab["id"], limit=12)
             last_hourly = self.get_recent_hourly_reports(tab["id"], limit=1)
             latest_message = self.get_recent_messages(tab["id"], limit=1)
+            effective_hourly = None
+            if latest and latest.get("hourly_rate") is not None:
+                effective_hourly = float(latest["hourly_rate"])
+            elif last_hourly:
+                report = last_hourly[0]
+                if report["ocr_hourly_average"] is not None:
+                    effective_hourly = float(report["ocr_hourly_average"])
+                elif report["ocr_last_hour"] is not None:
+                    effective_hourly = float(report["ocr_last_hour"])
             rows.append(
                 {
                     "tab": tab,
@@ -770,6 +785,7 @@ class Database:
                     "trend": [float(row["hourly_rate"]) for row in recent if row["hourly_rate"] is not None],
                     "last_hourly": last_hourly[0] if last_hourly else None,
                     "latest_message": latest_message[0] if latest_message else None,
+                    "effective_hourly_rate": effective_hourly,
                 }
             )
         return rows

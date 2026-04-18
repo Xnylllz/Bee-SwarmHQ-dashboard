@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 import os
+import platform
 import sys
 
 from dotenv import load_dotenv
@@ -12,7 +13,21 @@ APP_NAME = "BeeHQ"
 DEV_ROOT_DIR = Path(__file__).resolve().parents[2]
 IS_FROZEN = bool(getattr(sys, "frozen", False))
 BUNDLE_RESOURCES_DIR = Path(getattr(sys, "_MEIPASS", DEV_ROOT_DIR))
-ROOT_DIR = (Path.home() / "Library" / "Application Support" / APP_NAME) if IS_FROZEN else DEV_ROOT_DIR
+
+
+def _frozen_runtime_root() -> Path:
+    system = platform.system()
+    if system == "Windows":
+        appdata = os.getenv("APPDATA")
+        if appdata:
+            return Path(appdata) / APP_NAME
+        return Path.home() / "AppData" / "Roaming" / APP_NAME
+    if system == "Darwin":
+        return Path.home() / "Library" / "Application Support" / APP_NAME
+    return Path.home() / f".{APP_NAME.lower()}"
+
+
+ROOT_DIR = _frozen_runtime_root() if IS_FROZEN else DEV_ROOT_DIR
 ENV_PATH = ROOT_DIR / ".env"
 DATA_DIR = ROOT_DIR / "data"
 CACHE_DIR = ROOT_DIR / "cache"

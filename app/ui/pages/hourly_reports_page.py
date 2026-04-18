@@ -77,6 +77,11 @@ class HourlyReportsPage(ctk.CTkScrollableFrame):
             f"Report time: {report['report_time_label'] or sent_time}",
             f"Captured in app: {sent_time}",
         ]
+        if report["ocr_ok"]:
+            if report["ocr_last_hour"] is not None:
+                meta_lines.append(f"OCR Last Hour: {self._format_metric(report['ocr_last_hour'])}")
+            if report["ocr_hourly_average"] is not None:
+                meta_lines.append(f"OCR Hourly Average: {self._format_metric(report['ocr_hourly_average'])}")
         self.hero_meta.configure(text="\n".join(meta_lines))
 
     def _render_feed(self, reports: list) -> None:
@@ -113,7 +118,16 @@ class HourlyReportsPage(ctk.CTkScrollableFrame):
             sent_time = self._format_local_timestamp(report["created_at"])
             subtitle = f"{report['report_time_label'] or sent_time} · synced {sent_time}"
             ctk.CTkLabel(text_block, text=subtitle, anchor="w", text_color=self.theme["text_muted"]).pack(fill="x", pady=(4, 8))
-            ctk.CTkLabel(text_block, text=report["body"][:260] or "Embedded hourly image captured.", anchor="w", justify="left", wraplength=520, text_color=self.theme["text_muted"]).pack(fill="x")
+            body_lines = [report["body"][:260] or "Embedded hourly image captured."]
+            if report["ocr_ok"]:
+                ocr_bits = []
+                if report["ocr_last_hour"] is not None:
+                    ocr_bits.append(f"Last Hour {self._format_metric(report['ocr_last_hour'])}")
+                if report["ocr_hourly_average"] is not None:
+                    ocr_bits.append(f"Hourly Avg {self._format_metric(report['ocr_hourly_average'])}")
+                if ocr_bits:
+                    body_lines.append("OCR: " + " | ".join(ocr_bits))
+            ctk.CTkLabel(text_block, text="\n".join(body_lines), anchor="w", justify="left", wraplength=520, text_color=self.theme["text_muted"]).pack(fill="x")
             ctk.CTkButton(
                 text_block,
                 text="Open Full Size",
@@ -147,3 +161,13 @@ class HourlyReportsPage(ctk.CTkScrollableFrame):
         display_size = (max(1, int(width * scale)), max(1, int(height * scale)))
         self._viewer_ref = ctk.CTkImage(light_image=image, dark_image=image, size=display_size)
         ctk.CTkLabel(frame, text="", image=self._viewer_ref).pack(padx=12, pady=12)
+
+    def _format_metric(self, value) -> str:
+        try:
+            number = float(value)
+        except (TypeError, ValueError):
+            return str(value)
+        for suffix, threshold in (("T", 1_000_000_000_000), ("B", 1_000_000_000), ("M", 1_000_000), ("K", 1_000)):
+            if abs(number) >= threshold:
+                return f"{number / threshold:.2f}{suffix}"
+        return f"{number:.0f}"

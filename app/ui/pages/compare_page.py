@@ -75,7 +75,7 @@ class ComparePage(ctk.CTkScrollableFrame):
 
         ranked = sorted(
             compare_rows,
-            key=lambda item: float(item.get("latest", {}).get("hourly_rate") or 0.0),
+            key=lambda item: float(item.get("effective_hourly_rate") or item.get("latest", {}).get("hourly_rate") or 0.0),
             reverse=True,
         )
         if not ranked:
@@ -85,7 +85,7 @@ class ComparePage(ctk.CTkScrollableFrame):
 
         top = ranked[0]
         top_tab = top["tab"]
-        top_rate = format_compact_number(top.get("latest", {}).get("hourly_rate"))
+        top_rate = format_compact_number(top.get("effective_hourly_rate") or top.get("latest", {}).get("hourly_rate"))
         summary_lines = [
             f"Top hourly rate: {top_tab['name']} at {top_rate}",
             f"Tracked accounts: {len(ranked)}",
@@ -101,6 +101,7 @@ class ComparePage(ctk.CTkScrollableFrame):
     def _render_row(self, rank: int, item: dict) -> None:
         tab = item["tab"]
         latest = item.get("latest") or {}
+        effective_hourly = item.get("effective_hourly_rate")
         card = ctk.CTkFrame(
             self.rows_host,
             fg_color=self.theme["panel"],
@@ -139,7 +140,7 @@ class ComparePage(ctk.CTkScrollableFrame):
         backpack_text = "--" if latest.get("backpack_percent") is None else f"{int(latest.get('backpack_percent'))}%"
         stat_line = "  |  ".join(
             [
-                f"Hourly {format_compact_number(latest.get('hourly_rate'))}",
+                f"Hourly {format_compact_number(effective_hourly if effective_hourly is not None else latest.get('hourly_rate'))}",
                 f"Honey {format_compact_number(latest.get('honey'))}",
                 f"Pollen {format_compact_number(latest.get('pollen'))}",
                 f"Backpack {backpack_text}",
@@ -155,6 +156,14 @@ class ComparePage(ctk.CTkScrollableFrame):
         last_hourly = item.get("last_hourly")
         if last_hourly:
             meta.append(f"Last hourly {last_hourly['report_time_label'] or self._format_time(last_hourly['created_at'])}")
+            if last_hourly["ocr_ok"]:
+                ocr_bits = []
+                if last_hourly["ocr_last_hour"] is not None:
+                    ocr_bits.append(f"Last Hour {format_compact_number(last_hourly['ocr_last_hour'])}")
+                if last_hourly["ocr_hourly_average"] is not None:
+                    ocr_bits.append(f"Hourly Avg {format_compact_number(last_hourly['ocr_hourly_average'])}")
+                if ocr_bits:
+                    meta.append("OCR " + " / ".join(ocr_bits))
         ctk.CTkLabel(left, text="  |  ".join(meta) if meta else "No recent data yet", text_color=self.theme["text_muted"], font=app_font(12)).pack(anchor="w")
 
         right = ctk.CTkFrame(card, fg_color="transparent", width=240)

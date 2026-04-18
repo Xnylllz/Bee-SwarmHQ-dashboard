@@ -1,6 +1,6 @@
-# Bee Swarm / Natro Dashboard for macOS
+# Bee Swarm / Natro Dashboard for macOS and Windows
 
-A modular desktop dashboard app for macOS built with Python, `customtkinter`, `discord.py`, SQLite, Pillow, and `python-dotenv`.
+A modular desktop dashboard app for macOS and Windows built with Python, `customtkinter`, `discord.py`, SQLite, Pillow, and `python-dotenv`.
 
 ## Features
 
@@ -18,14 +18,17 @@ A modular desktop dashboard app for macOS built with Python, `customtkinter`, `d
 - Live stats cards, history search, recent image gallery, and trend chart
 - Compare page for viewing multiple accounts side by side
 - Full app config export/import for moving tabs and settings between installs
+- OCR fallback for reading hourly values from Natro hourly report images
 - Local caching of Discord attachments
 - Background-running mode that can keep Discord syncing after you close the main window
 - Optional macOS menu bar helper for quick restore and quit actions
 - Launch-at-login support through a macOS LaunchAgent
-- Native macOS notifications for hourly reports and offline alerts
+- Launch-at-login support on Windows via the Startup folder
+- Desktop notifications for hourly reports and offline alerts
 - In-app Setup Guide page for first-run onboarding
 - PyInstaller-based standalone macOS `.app` packaging support
 - DMG build script and GitHub Actions build workflow
+- Windows packaging support with a GitHub Actions build workflow
 - Keyboard shortcuts for quick use: `Cmd+R` refresh, `Cmd+,` settings, `Esc` back to dashboard
 - Expandable project structure for future graphs, alerts, compare, and gallery pages
 
@@ -48,7 +51,7 @@ data/
 tests/
 ```
 
-## macOS Setup
+## Setup
 
 1. Create and activate a virtual environment:
 
@@ -76,6 +79,16 @@ cp .env.example .env
 
 ```bash
 python3 -m app.main
+```
+
+On Windows, the rough equivalent is:
+
+```powershell
+cd C:\path\to\Bee-SwarmHQ-dashboard
+python -m venv .venv
+.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+python -m app.main
 ```
 
 ## Full Setup Tutorial
@@ -141,6 +154,7 @@ That makes the routing much cleaner.
 - If Natro already posts automatic hourly images in the update channel, Bee HQ will capture them automatically.
 - Open the `Hourly` page to see them.
 - The app labels them with readable times such as `Hourly Report: 9:00 PM`.
+- BeeHQ can also try to OCR the hourly image and read values like `Last Hour` and `Hourly Average`.
 
 ### 8. Background behavior
 
@@ -159,7 +173,7 @@ That makes the routing much cleaner.
 
 In `Settings -> Advanced`, you can also turn on:
 
-- `Enable macOS Desktop Notifications`
+- `Enable Desktop Notifications`
 - `Launch Bee HQ At Login`
 - `Keep Running In Background When Window Closes`
 - `Enable macOS Menu Bar Helper If Available`
@@ -271,6 +285,32 @@ After you push to GitHub:
 5. Download the generated artifacts:
    - `BeeHQ-app`
    - `BeeHQ-dmg`
+   - `BeeHQ-windows`
+
+## Build A Standalone Windows App
+
+On Windows:
+
+```powershell
+cd C:\path\to\Bee-SwarmHQ-dashboard
+python -m venv .venv
+.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+pip install -r requirements-build.txt
+powershell -ExecutionPolicy Bypass -File .\scripts\build_windows_app.ps1
+```
+
+That should create:
+
+```text
+dist\BeeHQ
+```
+
+And on GitHub Actions the Windows workflow uploads:
+
+```text
+BeeHQ-windows
+```
 
 ## Download From GitHub And Run It
 
@@ -313,6 +353,32 @@ If you do not want to build from source:
 If macOS warns that the app is unsigned, that is expected for a local/self-built app until you sign and notarize it.
 You can usually open it by right clicking the app and choosing `Open`.
 
+For Windows:
+
+1. Open the latest successful `Build Windows App` run.
+2. Download the `BeeHQ-windows` artifact.
+3. Extract the zip.
+4. Open the `BeeHQ` folder.
+5. Run `BeeHQ.exe`.
+
+## OCR For Hourly Image Rankings
+
+BeeHQ rankings are strongest when the macro sends text values directly.
+
+But BeeHQ now also has a best-effort OCR fallback for hourly report screenshots:
+
+- it tries to read `Last Hour`
+- it tries to read `Hourly Average`
+- the Compare page can use those values if text-based hourly data is missing
+
+For OCR to work well, install Tesseract OCR on the machine running BeeHQ.
+
+Without Tesseract:
+
+- BeeHQ still works
+- hourly screenshots still show in the Hourly page
+- but OCR-based image ranking fallback will not run
+
 ## Discord Bot Notes
 
 - Enable the `MESSAGE CONTENT INTENT` for your Discord bot in the Discord developer portal.
@@ -330,10 +396,12 @@ python3 -m app.main --seed-demo
 
 ## Current Implementation Notes
 
-- The glass mode is a macOS-friendly simulated glass look using tinted panels over a background image. `tkinter` does not provide true per-widget alpha glass rendering, so the effect is styled rather than native transparent blur.
+- The glass mode is a styled translucent look rather than true native blur on either platform.
 - If `rumps` is installed, the optional macOS menu bar helper can show a small menu bar app with quick Show/Quit actions while Bee HQ keeps syncing in the background.
 - Launch at login is implemented with a user LaunchAgent plist in `~/Library/LaunchAgents`.
+- On Windows, launch at login is implemented through the Startup folder.
 - Standalone macOS packaging is provided through `PyInstaller` in `packaging/BeeHQ.spec`.
+- Standalone Windows packaging is provided through `PyInstaller` in `packaging/BeeHQ-windows.spec`.
 - Attachment caching works for Discord CDN URLs when the bot has access and the local machine has network access.
 - Drag-to-reorder tabs is implemented in the sidebar via move mode controls for reliability in `customtkinter`.
 - Frequent live update messages and standalone hourly-report replies are both parsed into a merged dashboard snapshot, so a newer manual `?hr` reply does not wipe out the richer live stats cards.
